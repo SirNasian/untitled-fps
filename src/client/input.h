@@ -21,5 +21,6 @@ void input_set_keybind(int key, InputAction action);
 void input_unset_keybind(int key);
 
 bool input_check_action(InputAction action);
+void input_get_mouse_delta(float *x, float *y);
 
 #endif

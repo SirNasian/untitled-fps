@@ -1,3 +1,4 @@
+#include <math.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -13,6 +14,9 @@
 
 #define FAIL(message, ...) { fprintf(stderr, (message), ##__VA_ARGS__); exit_code = EXIT_FAILURE; goto terminate; }
 #define PI 3.14159
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define CLAMP(value, min, max) (MAX((min), MIN((max), (value))))
 
 int exit_code = EXIT_SUCCESS;
 bool running = true;
@@ -25,6 +29,34 @@ void handle_interrupt(int _) {
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 	glViewport(0, 0, width, height);
+}
+
+void update_view_angles(float *yaw, float *pitch) {
+	static float sensitivity = 0.001;
+	float x, y;
+	input_get_mouse_delta(&x, &y);
+	*yaw += x * sensitivity;
+	*pitch = CLAMP((*pitch) - (y * sensitivity), -1.5, 1.5);
+}
+
+Vec3 get_forward(float yaw, float pitch) {
+	return (Vec3){
+		sinf(yaw) * cosf(pitch),
+		sinf(pitch),
+		-cosf(yaw) * cosf(pitch)
+	};
+}
+
+Vec3 get_move_input_direction(float yaw, float pitch) {
+	Vec3 right = { cosf(yaw), 0, sinf(yaw) };
+	Vec3 forward = get_forward(yaw, pitch);
+	forward.y = 0;
+
+	float input_forward = input_check_action(INPUT_MOVE_FORWARD) - input_check_action(INPUT_MOVE_BACKWARD);
+	float input_right = input_check_action(INPUT_MOVE_RIGHT) - input_check_action(INPUT_MOVE_LEFT);
+	Vec3 direction = vec3_add(vec3_mul(forward, input_forward), vec3_mul(right, input_right));
+
+	return vec3_normalize(direction);
 }
 
 int main() {
@@ -48,18 +80,20 @@ int main() {
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetKeyCallback(window, glfw_key_callback);
 	glfwSetCursorPosCallback(window, glfw_cursor_pos_callback);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	Vec3 pos = (Vec3){ 0, 0, 0 };
 	input_set_keybind(GLFW_KEY_W, INPUT_MOVE_FORWARD);
 	input_set_keybind(GLFW_KEY_A, INPUT_MOVE_LEFT);
 	input_set_keybind(GLFW_KEY_S, INPUT_MOVE_BACKWARD);
 	input_set_keybind(GLFW_KEY_D, INPUT_MOVE_RIGHT);
 
 	glViewport(0, 0, 800, 600);
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.2, 0.3, 0.3, 1.0);
 
 	quad_setup();
 
+	float yaw, pitch;
+	Vec3 pos = (Vec3){ 0, 0, 0 };
 	double _time = glfwGetTime();
 	while(!glfwWindowShouldClose(window) && running) {
 		glfwSwapBuffers(window);
@@ -69,15 +103,12 @@ int main() {
 		float delta = time - _time;
 		_time = time;
 
-		pos = vec3_add(pos, vec3_mul(vec3_normalize((Vec3){
-			input_check_action(INPUT_MOVE_RIGHT) - input_check_action(INPUT_MOVE_LEFT),
-			0.0,
-			input_check_action(INPUT_MOVE_BACKWARD) - input_check_action(INPUT_MOVE_FORWARD),
-		}), 2.0 * delta));
+		update_view_angles(&yaw, &pitch);
+		pos = vec3_add(pos, vec3_mul(get_move_input_direction(yaw, pitch), 2.0 * delta));
 
 		Mat4 mvp = mat4_identity();
 		mvp = mat4_multiply(mvp, mat4_perspective(PI/2, 1.33, 0.01, 10.0));
-		mvp = mat4_multiply(mvp, mat4_look_at(pos, (Vec3){ pos.x, pos.y, pos.z - 1.0 }, (Vec3){ 0, 1, 0 }));
+		mvp = mat4_multiply(mvp, mat4_look_at(pos, vec3_add(pos, get_forward(yaw, pitch)), (Vec3){ 0, 1, 0 }));
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
