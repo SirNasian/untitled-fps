@@ -1,0 +1,6 @@
+[submodule "vendor/enet"]
+	path = vendor/enet
+	url = https://github.com/lsalzman/enet.git
+[submodule "vendor/glfw"]
+	path = vendor/glfw
+	url = https://github.com/glfw/glfw.git
