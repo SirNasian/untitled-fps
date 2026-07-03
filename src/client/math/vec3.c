@@ -31,5 +31,6 @@ float vec3_dot(Vec3 a, Vec3 b) {
 }
 
 Vec3 vec3_normalize(Vec3 v) {
-	return vec3_div(v, sqrtf(vec3_dot(v, v)));
+	v = vec3_div(v, sqrtf(vec3_dot(v, v)));
+	return (isnan(v.x)) ? (Vec3){ 0, 0, 0 } : v;
 }
