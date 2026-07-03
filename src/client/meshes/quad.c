@@ -23,8 +23,8 @@ void quad_setup() {
 	mesh = mesh_create(GL_TRIANGLES, vertices, sizeof(vertices), indices, 6);
 }
 
-void quad_draw(Mat4 position) {
+void quad_draw(Mat4 mvp) {
 	shader_use(shader);
-	shader_set_mat4(shader, "model", position);
+	shader_set_mat4(shader, "mvp", mvp);
 	mesh_draw(mesh);
 }
