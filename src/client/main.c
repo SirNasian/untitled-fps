@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 
 #include "input.h"
+#include "math/mat4.h"
 #include "meshes/quad.h"
 
 #define FAIL(message, ...) { fprintf(stderr, (message), ##__VA_ARGS__); exit_code = EXIT_FAILURE; goto terminate; }
@@ -50,13 +51,17 @@ int main() {
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
 	quad_setup();
+	Mat4 m = mat4_rotate((Vec3){ 0, 0, 1 }, 3.14159/4);
 
 	while(!glfwWindowShouldClose(window) && running) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		quad_draw();
+		quad_draw(mat4_multiply(mat4_translate((Vec3){ -0.5,  0.5, 0 }), m));
+		quad_draw(mat4_multiply(mat4_translate((Vec3){  0.5, -0.5, 0 }), m));
+		quad_draw(mat4_multiply(mat4_translate((Vec3){ -0.5, -0.5, 0 }), m));
+		quad_draw(mat4_multiply(mat4_translate((Vec3){  0.5,  0.5, 0 }), m));
 	}
 
 terminate:

@@ -19,11 +19,12 @@ GLuint indices[] = {
 };
 
 void quad_setup() {
-	shader = shader_create("shaders/triangle.vert", "shaders/triangle.frag");
+	shader = shader_create("shaders/quad.vert", "shaders/quad.frag");
 	mesh = mesh_create(GL_TRIANGLES, vertices, sizeof(vertices), indices, 6);
 }
 
-void quad_draw() {
+void quad_draw(Mat4 position) {
 	shader_use(shader);
+	shader_set_mat4(shader, "model", position);
 	mesh_draw(mesh);
 }

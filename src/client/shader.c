@@ -77,3 +77,8 @@ Shader shader_create(const char *vertex_shader_path, const char *fragment_shader
 void shader_use(Shader shader) {
 	glUseProgram(shader.program);
 }
+
+void shader_set_mat4(Shader shader, const char *name, Mat4 mat4) {
+	GLint location = glGetUniformLocation(shader.program, name);
+	glUniformMatrix4fv(location, 1, GL_FALSE, mat4.m);
+}
