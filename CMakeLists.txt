@@ -8,6 +8,7 @@ add_subdirectory(vendor/glfw)
 
 file(GLOB CLIENT_SOURCES
 	src/client/*.c
+	src/client/**/*.c
 	vendor/glad/src/gl.c
 )
 

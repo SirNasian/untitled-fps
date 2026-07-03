@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 
 #include "input.h"
+#include "meshes/quad.h"
 
 #define FAIL(message, ...) { fprintf(stderr, (message), ##__VA_ARGS__); exit_code = EXIT_FAILURE; goto terminate; }
 
@@ -48,10 +49,14 @@ int main() {
 	glViewport(0, 0, 800, 600);
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
+	quad_setup();
+
 	while(!glfwWindowShouldClose(window) && running) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		quad_draw();
 	}
 
 terminate:
