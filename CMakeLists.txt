@@ -6,9 +6,9 @@ add_subdirectory(vendor/enet)
 add_subdirectory(vendor/glfw)
 
 
-file(GLOB CLIENT_SOURCES
+file(GLOB_RECURSE CLIENT_SOURCES
 	src/client/*.c
-	src/client/**/*.c
+	src/common/*.c
 	vendor/glad/src/gl.c
 )
 
@@ -18,8 +18,9 @@ target_include_directories(untitled-fps PRIVATE vendor/enet/include vendor/glad/
 target_link_libraries(untitled-fps PRIVATE enet glfw)
 
 
-file(GLOB SERVER_SOURCES
+file(GLOB_RECURSE SERVER_SOURCES
 	src/server/*.c
+	src/common/*.c
 )
 
 add_executable(untitled-fps-server)

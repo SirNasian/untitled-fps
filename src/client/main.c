@@ -7,9 +7,10 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
+#include "../common/math/mat4.h"
+#include "../common/math/vec3.h"
+
 #include "input.h"
-#include "math/mat4.h"
-#include "math/vec3.h"
 #include "meshes/quad.h"
 
 #define FAIL(message, ...) { fprintf(stderr, (message), ##__VA_ARGS__); exit_code = EXIT_FAILURE; goto terminate; }

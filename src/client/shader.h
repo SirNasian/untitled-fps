@@ -3,7 +3,7 @@
 
 #include <glad/gl.h>
 
-#include "math/mat4.h"
+#include "../common/math/mat4.h"
 
 typedef struct {
 	GLuint program;

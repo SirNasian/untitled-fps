@@ -1,5 +1,5 @@
-#ifndef CLIENT_MATH_MAT4_H
-#define CLIENT_MATH_MAT4_H
+#ifndef COMMON_MATH_MAT4_H
+#define COMMON_MATH_MAT4_H
 
 #include "vec3.h"
 

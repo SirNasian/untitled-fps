@@ -1,5 +1,5 @@
-#ifndef CLIENT_MATH_VEC3_H
-#define CLIENT_MATH_VEC3_H
+#ifndef COMMON_MATH_VEC3_H
+#define COMMON_MATH_VEC3_H
 
 typedef struct {
 	float x, y, z;
