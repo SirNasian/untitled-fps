@@ -7,8 +7,27 @@
 #include "../common/network.h"
 #include "../common/time.h"
 
-int exit_code = EXIT_SUCCESS;
-bool running = true;
+static int exit_code = EXIT_SUCCESS;
+static bool running = true;
+
+static uint8_t map_data[256] = {
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+	1,0,1,1,0,0,0,0,0,0,0,0,1,1,0,1,
+	1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,
+	1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,1,
+	1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,
+	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+	1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,
+	1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,
+	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+	1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,
+	1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,1,
+	1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,
+	1,0,1,1,0,0,0,0,0,0,0,0,1,1,0,1,
+	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+};
 
 void handle_interrupt(int _) {
 	if (!running)
@@ -25,7 +44,7 @@ int main() {
 
 	while (running) {
 		if (time_next_tick_ns(false) == 0)
-			network_server_service(host);
+			network_server_service(host, map_data);
 		nanosleep(&(struct timespec){ 0, time_next_tick_ns(true) }, NULL);
 	}
 

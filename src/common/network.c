@@ -99,10 +99,22 @@ void network_receive_player_pose(const ENetEvent *event) {
 	player_set_pose(player_id, &position, &rotation);
 }
 
+// NOTE: the map is expected to be a 16x16 array
+void network_send_map_data(ENetPeer *peer, const uint8_t *map) {
+	uint8_t data[257] = { NETWORK_PACKET_TYPE_MAP_DATA };
+	memcpy(data+1, map, 256);
+	ENetPacket *packet = enet_packet_create(data, 257, ENET_PACKET_FLAG_RELIABLE);
+	enet_peer_send(peer, NETWORK_CHANNEL_EVENTS, packet);
+}
+
+void network_receive_map_data(ENetEvent *event, uint8_t *map) {
+	if (event->packet->data[0] != NETWORK_PACKET_TYPE_MAP_DATA) return;
+	memcpy(map, event->packet->data+1, 256);
+}
+
 void network_client_receive(const ENetEvent *event) {
 	if (event->type != ENET_EVENT_TYPE_RECEIVE) return;
 	switch ((NetworkPacketType)event->packet->data[0]) {
-		case NETWORK_PACKET_TYPE_PLAYER_ID:         network_receive_player_id(event);         break;
 		case NETWORK_PACKET_TYPE_PLAYER_CONNECT:    network_receive_player_connect(event);    break;
 		case NETWORK_PACKET_TYPE_PLAYER_DISCONNECT: network_receive_player_disconnect(event); break;
 		case NETWORK_PACKET_TYPE_PLAYER_POSE:       network_receive_player_pose(event);       break;
@@ -139,13 +151,14 @@ bool network_server_setup(const char *listen_address, int listen_port, ENetHost 
 	return true;
 }
 
-void network_server_service(ENetHost *host) {
+void network_server_service(ENetHost *host, const uint8_t *map_data) {
 	ENetEvent event;
 	while (enet_host_service(host, &event, 0) > 0) {
 		switch (event.type) {
 			case ENET_EVENT_TYPE_CONNECT:
 				event.peer->data = player_create(event.peer);
 				network_send_player_id(event.peer, ((Player*)event.peer->data)->id);
+				network_send_map_data(event.peer, map_data);
 				network_broadcast_player_connect(host, event.peer->data);
 				for (int i = 0; i < host->peerCount; i++) {
 					if (&host->peers[i] == event.peer) continue;
@@ -175,7 +188,13 @@ void network_server_service(ENetHost *host) {
 			network_broadcast_player_pose(host, host->peers[i].data, &host->peers[i]);
 }
 
-bool network_client_setup(const char *server_address, int server_port, ENetHost **host, ENetPeer **server) {
+bool network_client_setup(
+	const char *server_address,
+	int server_port,
+	ENetHost **host,
+	ENetPeer **server,
+	uint8_t *map_data
+) {
 	if (enet_initialize() != 0) {
 		fprintf(stderr, "failed to initialise ENET\n");
 		return false;
@@ -196,6 +215,29 @@ bool network_client_setup(const char *server_address, int server_port, ENetHost 
 	if (*server == NULL || enet_host_service(*host, &event, 1000) <= 0)  {
 		fprintf(stderr, "failed to connect to server\n");
 		return false;
+	}
+
+	uint8_t loading = 3;
+	while (loading) {
+		enet_host_service(*host, &event, 50);
+		if (event.type == ENET_EVENT_TYPE_DISCONNECT) return false;
+		if (event.type != ENET_EVENT_TYPE_RECEIVE) continue;
+		switch (event.packet->data[0]) {
+			case NETWORK_PACKET_TYPE_PLAYER_ID:
+				if (!(loading & 1)) break;
+				loading ^= 1;
+				network_receive_player_id(&event);
+				break;
+			case NETWORK_PACKET_TYPE_MAP_DATA:
+				if (!(loading & 2)) break;
+				loading ^= 2;
+				network_receive_map_data(&event, map_data);
+				break;
+			default:
+				network_client_receive(&event);
+				break;
+		}
+		enet_packet_destroy(event.packet);
 	}
 
 	return true;

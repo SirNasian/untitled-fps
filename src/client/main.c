@@ -25,8 +25,10 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define CLAMP(value, min, max) (MAX((min), MIN((max), (value))))
 
-int exit_code = EXIT_SUCCESS;
-bool running = true;
+static int exit_code = EXIT_SUCCESS;
+static bool running = true;
+
+static uint8_t map_data[256];
 
 void handle_interrupt(int _) {
 	if (!running)
@@ -72,7 +74,7 @@ int main(int argc, char **argv) {
 	ENetHost *host;
 	ENetPeer *server;
 	char *server_address = argc > 1 ? argv[1] : "localhost";
-	if (!network_client_setup(server_address, 42069, &host, &server))
+	if (!network_client_setup(server_address, 42069, &host, &server, map_data))
 		FAIL("failed to setup network");
 
 	if (glfwInit() == GLFW_FALSE)
