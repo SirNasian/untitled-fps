@@ -25,6 +25,7 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define CLAMP(value, min, max) (MAX((min), MIN((max), (value))))
+#define PLAYER_RADIUS 0.1f
 
 static int exit_code = EXIT_SUCCESS;
 static bool running = true;
@@ -39,14 +40,6 @@ void handle_interrupt(int _) {
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 	glViewport(0, 0, width, height);
-}
-
-void update_view_angles(float *yaw, float *pitch) {
-	static float sensitivity = 0.001;
-	float x, y;
-	input_get_mouse_delta(&x, &y);
-	*yaw -= x * sensitivity;
-	*pitch = CLAMP((*pitch) - (y * sensitivity), -1.5, 1.5);
 }
 
 Vec3 get_forward(float yaw, float pitch) {
@@ -67,6 +60,28 @@ Vec3 get_move_input_direction(float yaw, float pitch) {
 	Vec3 direction = vec3_add(vec3_mul(forward, input_forward), vec3_mul(right, input_right));
 
 	return vec3_normalize(direction);
+}
+
+void update_view_angles(float *yaw, float *pitch) {
+	static float sensitivity = 0.001;
+	float x, y;
+	input_get_mouse_delta(&x, &y);
+	*yaw -= x * sensitivity;
+	*pitch = CLAMP((*pitch) - (y * sensitivity), -1.5, 1.5);
+}
+
+void update_view_position(Vec3 *pos, const Vec3 *rot, float delta) {
+	*pos = vec3_add(*pos, vec3_mul(get_move_input_direction(rot->y, rot->x), 2.0 * delta));
+
+	if (map_data[16*(int)(pos->z + PLAYER_RADIUS) + (int)pos->x])
+		pos->z = (float)(int)(pos->z + PLAYER_RADIUS) - PLAYER_RADIUS;
+	if (map_data[16*(int)(pos->z - PLAYER_RADIUS) + (int)pos->x])
+		pos->z = (float)((int)(pos->z - PLAYER_RADIUS) + 1) + PLAYER_RADIUS;
+
+	if (map_data[16*(int)pos->z + (int)(pos->x + PLAYER_RADIUS)])
+		pos->x = (float)(int)(pos->x + PLAYER_RADIUS) - PLAYER_RADIUS;
+	if (map_data[16*(int)pos->z + (int)(pos->x - PLAYER_RADIUS)])
+		pos->x = (float)((int)(pos->x - PLAYER_RADIUS) + 1) + PLAYER_RADIUS;
 }
 
 int main(int argc, char **argv) {
@@ -125,7 +140,7 @@ int main(int argc, char **argv) {
 		Vec3 *rot = &player_get_ptr()->rotation;
 
 		update_view_angles(&rot->y, &rot->x);
-		*pos = vec3_add(*pos, vec3_mul(get_move_input_direction(rot->y, rot->x), 2.0 * delta));
+		update_view_position(pos, rot, delta);
 
 		Mat4 mvp = mat4_identity();
 		mvp = mat4_multiply(mvp, mat4_perspective(PI/2, 1.33, 0.01, 32.0));
