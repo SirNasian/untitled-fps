@@ -25,6 +25,20 @@ void network_receive_player_connect(const ENetEvent *event) {
 	player_set_active(player_id, true);
 }
 
+void network_broadcast_player_disconnect(ENetHost *host, const Player *player) {
+	uint8_t data[3] = { NETWORK_PACKET_TYPE_PLAYER_DISCONNECT };
+	memcpy(data+1, &player->id, 2);
+	ENetPacket *packet = enet_packet_create(data, sizeof(data), ENET_PACKET_FLAG_RELIABLE);
+	enet_host_broadcast(host, NETWORK_CHANNEL_EVENTS, packet);
+}
+
+void network_receive_player_disconnect(const ENetEvent *event) {
+	if (event->packet->data[0] != NETWORK_PACKET_TYPE_PLAYER_DISCONNECT) return;
+	uint16_t player_id;
+	memcpy(&player_id, event->packet->data+1, 2);
+	player_set_active(player_id, false);
+}
+
 void network_send_player_id(ENetPeer *peer, uint16_t player_id) {
 	uint8_t data[3] = { NETWORK_PACKET_TYPE_PLAYER_ID };
 	memcpy(data+1, &player_id, 2);
@@ -88,9 +102,10 @@ void network_receive_player_pose(const ENetEvent *event) {
 void network_client_receive(const ENetEvent *event) {
 	if (event->type != ENET_EVENT_TYPE_RECEIVE) return;
 	switch ((NetworkPacketType)event->packet->data[0]) {
-		case NETWORK_PACKET_TYPE_PLAYER_ID:      network_receive_player_id(event);      break;
-		case NETWORK_PACKET_TYPE_PLAYER_CONNECT: network_receive_player_connect(event); break;
-		case NETWORK_PACKET_TYPE_PLAYER_POSE:    network_receive_player_pose(event);    break;
+		case NETWORK_PACKET_TYPE_PLAYER_ID:         network_receive_player_id(event);         break;
+		case NETWORK_PACKET_TYPE_PLAYER_CONNECT:    network_receive_player_connect(event);    break;
+		case NETWORK_PACKET_TYPE_PLAYER_DISCONNECT: network_receive_player_disconnect(event); break;
+		case NETWORK_PACKET_TYPE_PLAYER_POSE:       network_receive_player_pose(event);       break;
 		default: break;
 	}
 }
@@ -132,12 +147,16 @@ void network_server_service(ENetHost *host) {
 				event.peer->data = player_create(event.peer);
 				network_send_player_id(event.peer, ((Player*)event.peer->data)->id);
 				network_broadcast_player_connect(host, event.peer->data);
-				for (int i = 0; i < host->peerCount; i++)
-					if (&host->peers[i] != event.peer && host->peers[i].state == ENET_PEER_STATE_CONNECTED)
-						network_send_player_connect(event.peer, host->peers[i].data);
+				for (int i = 0; i < host->peerCount; i++) {
+					if (&host->peers[i] == event.peer) continue;
+					if (host->peers[i].state != ENET_PEER_STATE_CONNECTED) continue;
+					if (!((Player*)host->peers[i].data)->active) continue;
+					network_send_player_connect(event.peer, host->peers[i].data);
+				}
 				break;
 			case ENET_EVENT_TYPE_DISCONNECT:
 				if (event.peer->data != NULL) {
+					network_broadcast_player_disconnect(host, event.peer->data);
 					player_set_active(((Player*)event.peer->data)->id, false);
 					event.peer->data = NULL;
 				}
