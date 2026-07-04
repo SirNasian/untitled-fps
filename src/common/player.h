@@ -2,6 +2,7 @@
 #define COMMON_PLAYER_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <enet/enet.h>
 

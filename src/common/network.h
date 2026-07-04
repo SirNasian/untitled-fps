@@ -2,6 +2,7 @@
 #define COMMON_NETWORK_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <enet/enet.h>
 
