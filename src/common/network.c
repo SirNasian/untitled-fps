@@ -157,6 +157,9 @@ void network_server_service(ENetHost *host, const uint8_t *map_data) {
 		switch (event.type) {
 			case ENET_EVENT_TYPE_CONNECT:
 				event.peer->data = player_create(event.peer);
+				((Player*)event.peer->data)->position.x =  8;
+				((Player*)event.peer->data)->position.z = 12;
+				network_broadcast_player_pose(host, event.peer->data, NULL);
 				network_send_player_id(event.peer, ((Player*)event.peer->data)->id);
 				network_send_map_data(event.peer, map_data);
 				network_broadcast_player_connect(host, event.peer->data);

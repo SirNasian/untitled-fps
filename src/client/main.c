@@ -17,6 +17,7 @@
 #include "input.h"
 #include "meshes/player_mesh.h"
 #include "meshes/quad.h"
+#include "meshes/wall.h"
 #include "shader.h"
 
 #define FAIL(message, ...) { fprintf(stderr, (message), ##__VA_ARGS__); exit_code = EXIT_FAILURE; goto terminate; }
@@ -109,6 +110,7 @@ int main(int argc, char **argv) {
 	shader_use(shader);
 	player_mesh_setup();
 	quad_setup();
+	wall_setup();
 
 	double _time = glfwGetTime();
 	while(!glfwWindowShouldClose(window) && running) {
@@ -126,19 +128,18 @@ int main(int argc, char **argv) {
 		*pos = vec3_add(*pos, vec3_mul(get_move_input_direction(rot->y, rot->x), 2.0 * delta));
 
 		Mat4 mvp = mat4_identity();
-		mvp = mat4_multiply(mvp, mat4_perspective(PI/2, 1.33, 0.01, 10.0));
+		mvp = mat4_multiply(mvp, mat4_perspective(PI/2, 1.33, 0.01, 32.0));
 		mvp = mat4_multiply(mvp, mat4_look_at(*pos, vec3_add(*pos, get_forward(rot->y, rot->x)), (Vec3){ 0, 1, 0 }));
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		Mat4 m = mat4_identity();
-		m = mat4_multiply(m, mat4_scale((Vec3){ 8, 0, 8 }));
-		m = mat4_multiply(m, mat4_rotate((Vec3){ 1, 0, 0 }, PI/2));
-		for (float y = -0.5; y < 1.5; y += 1.0) {
-			shader_set_mat4(shader, "mvp", mat4_multiply(mvp, mat4_multiply(mat4_translate((Vec3){ 0, y, -2 }), m)));
-			shader_set_vec3(shader, "colour", (Vec3){ 0.6, 0.6, 0.7 });
+		for (int i = 0; i < 256; i++) {
+			if (!map_data[i]) continue;
+			Mat4 m = mat4_translate((Vec3){ (i % 16) + 0.5, 0, (int)(i / 16) + 0.5 });
+			shader_set_mat4(shader, "mvp", mat4_multiply(mvp, m));
+			shader_set_vec3(shader, "colour", (Vec3){ 0.6, 0.6, 0.6 });
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			quad_draw();
+			wall_draw();
 		}
 
 		for (uint32_t i = 0; i < 65536; i++) {
