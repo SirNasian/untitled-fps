@@ -15,6 +15,7 @@
 #include "../common/time.h"
 
 #include "input.h"
+#include "meshes/player_mesh.h"
 #include "meshes/quad.h"
 #include "shader.h"
 
@@ -41,20 +42,20 @@ void update_view_angles(float *yaw, float *pitch) {
 	static float sensitivity = 0.001;
 	float x, y;
 	input_get_mouse_delta(&x, &y);
-	*yaw += x * sensitivity;
+	*yaw -= x * sensitivity;
 	*pitch = CLAMP((*pitch) - (y * sensitivity), -1.5, 1.5);
 }
 
 Vec3 get_forward(float yaw, float pitch) {
 	return (Vec3){
-		sinf(yaw) * cosf(pitch),
+		cosf(pitch) * -sinf(yaw),
 		sinf(pitch),
-		-cosf(yaw) * cosf(pitch)
+		cosf(pitch) * -cosf(yaw),
 	};
 }
 
 Vec3 get_move_input_direction(float yaw, float pitch) {
-	Vec3 right = { cosf(yaw), 0, sinf(yaw) };
+	Vec3 right = { cosf(yaw), 0, -sinf(yaw) };
 	Vec3 forward = get_forward(yaw, pitch);
 	forward.y = 0;
 
@@ -104,6 +105,7 @@ int main(int argc, char **argv) {
 
 	Shader shader = shader_create("shaders/entity.vert", "shaders/entity.frag");
 	shader_use(shader);
+	player_mesh_setup();
 	quad_setup();
 
 	double _time = glfwGetTime();
@@ -134,8 +136,21 @@ int main(int argc, char **argv) {
 			for (float x = -4.0; x <= 4.0; x += 1.0)
 				for (float z = -4.0; z <= 4.0; z += 1.0) {
 					shader_set_mat4(shader, "mvp", mat4_multiply(mvp, mat4_multiply(mat4_translate((Vec3){ x, y, z }), m)));
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 					quad_draw();
 				}
+
+		for (uint32_t i = 0; i < 65536; i++) {
+			Player *p = player_get_ptr_all()+i;
+			if (!p->active || p == player_get_ptr()) continue;
+			Mat4 m = mat4_identity();
+			m = mat4_multiply(m, mat4_translate(p->position));
+			m = mat4_multiply(m, mat4_rotate((Vec3){ 0, 1, 0 }, p->rotation.y));
+			m = mat4_multiply(m, mat4_rotate((Vec3){ 1, 0, 0 }, p->rotation.x));
+			shader_set_mat4(shader, "mvp", mat4_multiply(mvp, m));
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			player_mesh_draw();
+		}
 
 		if (time_next_tick_ns(false) == 0)
 			network_client_service(host, server);

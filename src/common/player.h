@@ -17,6 +17,7 @@ typedef struct {
 
 void player_set_id(uint16_t);
 Player* player_get_ptr();
+Player* player_get_ptr_all();
 
 Player* player_create(ENetPeer *peer);
 void player_set_active(uint16_t id, bool active);

@@ -7,6 +7,7 @@ uint16_t _player_id = 0;
 
 void player_set_id(uint16_t id) { _player_id = id; }
 Player* player_get_ptr() { return _players + _player_id; }
+Player* player_get_ptr_all() { return _players; }
 
 Player* player_create(ENetPeer *peer) {
 	static uint16_t counter = 0;

@@ -2,16 +2,16 @@
 
 #include "../mesh.h"
 
-Mesh mesh;
+static Mesh mesh;
 
-GLfloat vertices[] = {
+static GLfloat vertices[] = {
 	-0.5f, -0.5f, 0.0f,
 	-0.5f,  0.5f, 0.0f,
 	 0.5f,  0.5f, 0.0f,
 	 0.5f, -0.5f, 0.0f,
 };
 
-GLuint indices[] = {
+static GLuint indices[] = {
 	0, 1, 2,
 	2, 3, 0,
 };
