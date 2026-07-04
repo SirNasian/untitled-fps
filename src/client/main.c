@@ -9,7 +9,11 @@
 
 #include "../common/math/mat4.h"
 #include "../common/math/vec3.h"
+#include "../common/network.h"
+#include "../common/player.h"
+#include "../common/time.h"
 
+#include "enet/enet.h"
 #include "input.h"
 #include "meshes/quad.h"
 
@@ -60,11 +64,17 @@ Vec3 get_move_input_direction(float yaw, float pitch) {
 	return vec3_normalize(direction);
 }
 
-int main() {
+int main(int argc, char **argv) {
 	signal(SIGINT, handle_interrupt);
 
+	ENetHost *host;
+	ENetPeer *server;
+	char *server_address = argc > 1 ? argv[1] : "localhost";
+	if (!network_client_setup(server_address, 42069, &host, &server))
+		FAIL("failed to setup network");
+
 	if (glfwInit() == GLFW_FALSE)
-		FAIL("Failed to initialize GLFW\n");
+		FAIL("failed to initialize GLFW\n");
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -72,11 +82,11 @@ int main() {
 
 	GLFWwindow *window = glfwCreateWindow(800, 600, "Untitled FPS", NULL, NULL);
 	if (window == NULL)
-		FAIL("Failed to create GLFW window\n");
+		FAIL("failed to create GLFW window\n");
 
 	glfwMakeContextCurrent(window);
 	if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress))
-		FAIL("Failed to initialize GLAD\n");
+		FAIL("failed to initialize GLAD\n");
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetKeyCallback(window, glfw_key_callback);
@@ -93,8 +103,6 @@ int main() {
 
 	quad_setup();
 
-	float yaw, pitch;
-	Vec3 pos = (Vec3){ 0, 0, 0 };
 	double _time = glfwGetTime();
 	while(!glfwWindowShouldClose(window) && running) {
 		glfwSwapBuffers(window);
@@ -104,12 +112,15 @@ int main() {
 		float delta = time - _time;
 		_time = time;
 
-		update_view_angles(&yaw, &pitch);
-		pos = vec3_add(pos, vec3_mul(get_move_input_direction(yaw, pitch), 2.0 * delta));
+		Vec3 *pos = &player_get_ptr()->position;
+		Vec3 *rot = &player_get_ptr()->rotation;
+
+		update_view_angles(&rot->y, &rot->x);
+		*pos = vec3_add(*pos, vec3_mul(get_move_input_direction(rot->y, rot->x), 2.0 * delta));
 
 		Mat4 mvp = mat4_identity();
 		mvp = mat4_multiply(mvp, mat4_perspective(PI/2, 1.33, 0.01, 10.0));
-		mvp = mat4_multiply(mvp, mat4_look_at(pos, vec3_add(pos, get_forward(yaw, pitch)), (Vec3){ 0, 1, 0 }));
+		mvp = mat4_multiply(mvp, mat4_look_at(*pos, vec3_add(*pos, get_forward(rot->y, rot->x)), (Vec3){ 0, 1, 0 }));
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -120,9 +131,14 @@ int main() {
 			for (float x = -4.0; x <= 4.0; x += 1.0)
 				for (float z = -4.0; z <= 4.0; z += 1.0)
 					quad_draw(mat4_multiply(mvp, mat4_multiply(mat4_translate((Vec3){ x, y, z }), m)));
+
+		if (time_next_tick_ns(false) == 0)
+			network_client_service(host, server);
 	}
 
 terminate:
+	enet_host_destroy(host);
+	enet_deinitialize();
 	glfwTerminate();
 	return exit_code;
 }

@@ -26,4 +26,4 @@ file(GLOB_RECURSE SERVER_SOURCES
 add_executable(untitled-fps-server)
 target_sources(untitled-fps-server PRIVATE ${SERVER_SOURCES})
 target_include_directories(untitled-fps-server PRIVATE vendor/enet/include)
-target_link_libraries(untitled-fps-server PRIVATE enet)
+target_link_libraries(untitled-fps-server PRIVATE enet m)
