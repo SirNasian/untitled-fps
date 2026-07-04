@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <enet/enet.h>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
@@ -13,9 +14,9 @@
 #include "../common/player.h"
 #include "../common/time.h"
 
-#include "enet/enet.h"
 #include "input.h"
 #include "meshes/quad.h"
+#include "shader.h"
 
 #define FAIL(message, ...) { fprintf(stderr, (message), ##__VA_ARGS__); exit_code = EXIT_FAILURE; goto terminate; }
 #define PI 3.14159
@@ -101,6 +102,8 @@ int main(int argc, char **argv) {
 	glViewport(0, 0, 800, 600);
 	glClearColor(0.2, 0.3, 0.3, 1.0);
 
+	Shader shader = shader_create("shaders/entity.vert", "shaders/entity.frag");
+	shader_use(shader);
 	quad_setup();
 
 	double _time = glfwGetTime();
@@ -129,8 +132,10 @@ int main(int argc, char **argv) {
 		m = mat4_multiply(m, mat4_rotate((Vec3){ 1, 0, 0 }, PI/2));
 		for (float y = -0.5; y <= 0.5; y += 1.0)
 			for (float x = -4.0; x <= 4.0; x += 1.0)
-				for (float z = -4.0; z <= 4.0; z += 1.0)
-					quad_draw(mat4_multiply(mvp, mat4_multiply(mat4_translate((Vec3){ x, y, z }), m)));
+				for (float z = -4.0; z <= 4.0; z += 1.0) {
+					shader_set_mat4(shader, "mvp", mat4_multiply(mvp, mat4_multiply(mat4_translate((Vec3){ x, y, z }), m)));
+					quad_draw();
+				}
 
 		if (time_next_tick_ns(false) == 0)
 			network_client_service(host, server);

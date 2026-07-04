@@ -1,9 +1,7 @@
 #include "quad.h"
 
 #include "../mesh.h"
-#include "../shader.h"
 
-Shader shader;
 Mesh mesh;
 
 GLfloat vertices[] = {
@@ -19,12 +17,9 @@ GLuint indices[] = {
 };
 
 void quad_setup() {
-	shader = shader_create("shaders/quad.vert", "shaders/quad.frag");
 	mesh = mesh_create(GL_TRIANGLES, vertices, sizeof(vertices), indices, 6);
 }
 
-void quad_draw(Mat4 mvp) {
-	shader_use(shader);
-	shader_set_mat4(shader, "mvp", mvp);
+void quad_draw() {
 	mesh_draw(mesh);
 }
