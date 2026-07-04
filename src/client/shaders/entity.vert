@@ -2,8 +2,13 @@
 
 layout (location = 0) in vec3 aPos;
 
-uniform mat4 mvp;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+out vec3 frag_position;
 
 void main() {
-	gl_Position = mvp * vec4(aPos.x, aPos.y, aPos.z, 1.0);
+	frag_position = vec3(model * vec4(aPos, 1.0));
+	gl_Position = projection * view * model * vec4(aPos, 1.0);
 }

@@ -25,7 +25,7 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define CLAMP(value, min, max) (MAX((min), MIN((max), (value))))
-#define PLAYER_RADIUS 0.1f
+#define PLAYER_RADIUS 0.2
 
 static int exit_code = EXIT_SUCCESS;
 static bool running = true;
@@ -120,9 +120,12 @@ int main(int argc, char **argv) {
 
 	glViewport(0, 0, 800, 600);
 	glClearColor(0.2, 0.3, 0.3, 1.0);
+	glEnable(GL_DEPTH_TEST);
 
 	Shader shader = shader_create("shaders/entity.vert", "shaders/entity.frag");
 	shader_use(shader);
+	shader_set_mat4(shader, "projection", mat4_perspective(PI/2, 1.33, 0.01, 32.0));
+
 	player_mesh_setup();
 	quad_setup();
 	wall_setup();
@@ -146,28 +149,44 @@ int main(int argc, char **argv) {
 		mvp = mat4_multiply(mvp, mat4_perspective(PI/2, 1.33, 0.01, 32.0));
 		mvp = mat4_multiply(mvp, mat4_look_at(*pos, vec3_add(*pos, get_forward(rot->y, rot->x)), (Vec3){ 0, 1, 0 }));
 
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		Mat4 m;
+		shader_set_mat4(shader, "view", mat4_look_at(*pos, vec3_add(*pos, get_forward(rot->y, rot->x)), (Vec3){ 0, 1, 0 }));
+		shader_set_vec3(shader, "camera", *pos);
 
 		for (int i = 0; i < 256; i++) {
 			if (!map_data[i]) continue;
-			Mat4 m = mat4_translate((Vec3){ (i % 16) + 0.5, 0, (int)(i / 16) + 0.5 });
-			shader_set_mat4(shader, "mvp", mat4_multiply(mvp, m));
+			m = mat4_translate((Vec3){ (i % 16) + 0.5, 0, (int)(i / 16) + 0.5 });
+			shader_set_mat4(shader, "model", m);
 			shader_set_vec3(shader, "colour", (Vec3){ 0.6, 0.6, 0.6 });
+			shader_set_bool(shader, "fullbright", false);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			wall_draw();
 		}
 
 		for (uint32_t i = 0; i < 65536; i++) {
 			Player *p = player_get_ptr_all()+i;
-			if (!p->active || p == player_get_ptr()) continue;
-			Mat4 m = mat4_identity();
+			if (!p->active || p == player_get_ptr())
+				continue;
+
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			shader_set_mat4(shader, "model", m);
+			shader_set_vec3(shader, "colour", (Vec3){ 1.0, 0.5, 0.2 });
+			shader_set_bool(shader, "fullbright", true);
+
+			m = mat4_identity();
 			m = mat4_multiply(m, mat4_translate(p->position));
 			m = mat4_multiply(m, mat4_rotate((Vec3){ 0, 1, 0 }, p->rotation.y));
 			m = mat4_multiply(m, mat4_rotate((Vec3){ 1, 0, 0 }, p->rotation.x));
-			shader_set_mat4(shader, "mvp", mat4_multiply(mvp, m));
-			shader_set_vec3(shader, "colour", (Vec3){ 1.0, 0.5, 0.2 });
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			shader_set_mat4(shader, "model", m);
 			player_mesh_draw();
+
+			m = mat4_identity();
+			m = mat4_multiply(m, mat4_translate(p->position));
+			m = mat4_multiply(m, mat4_scale((Vec3){ 0.2, 0.2, 0.2 }));
+			shader_set_mat4(shader, "model", m);
+			wall_draw();
 		}
 
 		if (time_next_tick_ns(false) == 0)

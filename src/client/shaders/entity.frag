@@ -1,9 +1,15 @@
 #version 330 core
 
-out vec4 FragColor;
+in vec3 frag_position;
 
+out vec4 frag_colour;
+
+uniform bool fullbright;
 uniform vec3 colour;
+uniform vec3 camera;
 
 void main() {
-	FragColor = vec4(colour, 1.0);
+	float dist = distance(frag_position, camera);
+	float falloff = fullbright ? 1.0 : (1.0 / (1.0 + 0.05 * dist * dist));
+	frag_colour = vec4(colour * falloff, 1.0);
 }
