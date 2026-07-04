@@ -27,3 +27,9 @@ add_executable(untitled-fps-server)
 target_sources(untitled-fps-server PRIVATE ${SERVER_SOURCES})
 target_include_directories(untitled-fps-server PRIVATE vendor/enet/include)
 target_link_libraries(untitled-fps-server PRIVATE enet m)
+
+
+if(MINGW)
+	target_link_options(untitled-fps PRIVATE -static)
+	target_link_options(untitled-fps-server PRIVATE -static)
+endif()
