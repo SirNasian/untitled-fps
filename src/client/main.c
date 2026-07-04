@@ -130,15 +130,14 @@ int main(int argc, char **argv) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		Mat4 m = mat4_identity();
-		m = mat4_multiply(m, mat4_rotate((Vec3){ 0, 1, 0 }, PI/4));
+		m = mat4_multiply(m, mat4_scale((Vec3){ 8, 0, 8 }));
 		m = mat4_multiply(m, mat4_rotate((Vec3){ 1, 0, 0 }, PI/2));
-		for (float y = -0.5; y <= 0.5; y += 1.0)
-			for (float x = -4.0; x <= 4.0; x += 1.0)
-				for (float z = -4.0; z <= 4.0; z += 1.0) {
-					shader_set_mat4(shader, "mvp", mat4_multiply(mvp, mat4_multiply(mat4_translate((Vec3){ x, y, z }), m)));
-					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-					quad_draw();
-				}
+		for (float y = -0.5; y < 1.5; y += 1.0) {
+			shader_set_mat4(shader, "mvp", mat4_multiply(mvp, mat4_multiply(mat4_translate((Vec3){ 0, y, -2 }), m)));
+			shader_set_vec3(shader, "colour", (Vec3){ 0.6, 0.6, 0.7 });
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			quad_draw();
+		}
 
 		for (uint32_t i = 0; i < 65536; i++) {
 			Player *p = player_get_ptr_all()+i;
@@ -148,6 +147,7 @@ int main(int argc, char **argv) {
 			m = mat4_multiply(m, mat4_rotate((Vec3){ 0, 1, 0 }, p->rotation.y));
 			m = mat4_multiply(m, mat4_rotate((Vec3){ 1, 0, 0 }, p->rotation.x));
 			shader_set_mat4(shader, "mvp", mat4_multiply(mvp, m));
+			shader_set_vec3(shader, "colour", (Vec3){ 1.0, 0.5, 0.2 });
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			player_mesh_draw();
 		}
