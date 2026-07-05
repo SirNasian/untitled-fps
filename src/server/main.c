@@ -29,6 +29,8 @@ int main(int argc, const char **argv) {
 	map_load_data(argc > 1 ? argv[1] : "assets/map.png", &map);
 	if (!map.data) goto terminate;
 
+	map_load_monsters(&map);
+
 	const char *listen_address = argc > 2 ? argv[2] : NULL;
 	int listen_port = argc > 3 ? atoi(argv[3]) : 42069;
 

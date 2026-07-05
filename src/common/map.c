@@ -1,4 +1,5 @@
 #include "map.h"
+#include "monster.h"
 
 #include <math.h>
 
@@ -11,7 +12,7 @@
 
 #define MAP_PIXEL_WALL    (Pixel){ 0x00, 0x00, 0x00 }
 #define MAP_PIXEL_PLAYER  (Pixel){ 0x00, 0xFF, 0x00 }
-#define MAP_PIXEL_MONSTER (Pixel){ 0xFF, 0xFF, 0x00 }
+#define MAP_PIXEL_MONSTER (Pixel){ 0xFF, 0x00, 0x00 }
 
 typedef struct {
 	stbi_uc r, g, b;
@@ -47,6 +48,12 @@ Vec3 map_get_player_spawn(const MapData *map) {
 				(truncf((float)i / map->width)) + 0.5
 			};
 	return (Vec3){ 0, 0, 0 };
+}
+
+void map_load_monsters(const MapData *map) {
+	for (int i = 0; i < map_get_size(map); i++)
+		if (map->data[i] == MAP_VALUE_MONSTER)
+			monster_create((Vec3){ i%map->width+0.5, 0, (int)(i/map->width)+0.5 });
 }
 
 bool map_test_wall(const MapData *map, int x, int z) {

@@ -3,6 +3,7 @@
 
 #include "network.h"
 #include "map.h"
+#include "monster.h"
 #include "player.h"
 
 void network_broadcast_player_connect(ENetHost *host, const Player *player) {
@@ -109,14 +110,46 @@ void network_send_map_data(ENetPeer *peer, const MapData *map) {
 	memcpy(data+9, map->data,    map_get_size(map));
 	ENetPacket *packet = enet_packet_create(data, data_size, ENET_PACKET_FLAG_RELIABLE);
 	enet_peer_send(peer, NETWORK_CHANNEL_EVENTS, packet);
+	free(data);
 }
 
 void network_receive_map_data(ENetEvent *event, MapData *map) {
 	if (event->packet->data[0] != NETWORK_PACKET_TYPE_MAP_DATA) return;
-	memcpy(&map->width,  event->packet->data+1,  sizeof(uint32_t));
+	memcpy(&map->width,  event->packet->data+1, sizeof(uint32_t));
 	memcpy(&map->height, event->packet->data+5, sizeof(uint32_t));
 	map->data = malloc(map_get_size(map));
 	memcpy(map->data, event->packet->data+9, map_get_size(map));
+}
+
+void network_send_monsters(ENetPeer *peer) {
+	uint16_t monster_count = monster_get_active_count();
+	size_t monster_size = sizeof(uint16_t) + sizeof(Vec3);
+	size_t data_size = sizeof(uint8_t) + sizeof(uint16_t) + monster_count*monster_size;
+	uint8_t *data = malloc(data_size);
+	data[0] = NETWORK_PACKET_TYPE_MONSTER_LIST;
+
+	*(uint16_t*)(data+1) = monster_count;
+	for (int i = 0, j = 0; i < MONSTER_MAX_COUNT; i++)
+		if (monster_get_active(i)) {
+			*(uint16_t*)(data+3+j*monster_size) = i;
+			*(Vec3*)(data+3+j*monster_size+sizeof(uint16_t)) = monster_get_position(i);
+			j++;
+		}
+
+	ENetPacket *packet = enet_packet_create(data, data_size, ENET_PACKET_FLAG_RELIABLE);
+	enet_peer_send(peer, NETWORK_CHANNEL_EVENTS, packet);
+	free(data);
+}
+
+void network_receive_monsters(const ENetEvent *event) {
+	if (event->packet->data[0] != NETWORK_PACKET_TYPE_MONSTER_LIST) return;
+	uint16_t monster_count = *(uint16_t*)(event->packet->data+1);
+	size_t monster_size = sizeof(uint16_t) + sizeof(Vec3);
+	for (int i = 0; i < monster_count; i++) {
+		uint16_t id = *(uint16_t*)(event->packet->data+3+i*monster_size);
+		monster_set_active(id, true);
+		monster_set_position(id, *(Vec3*)(event->packet->data+3+i*monster_size+sizeof(uint16_t)));
+	}
 }
 
 void network_client_receive(const ENetEvent *event) {
@@ -180,6 +213,7 @@ void network_server_service(ENetHost *host, const MapData *map) {
 				network_broadcast_player_pose(host, event.peer->data, NULL);
 				network_send_player_id(event.peer, ((Player*)event.peer->data)->id);
 				network_send_map_data(event.peer, map);
+				network_send_monsters(event.peer);
 				network_broadcast_player_connect(host, event.peer->data);
 				for (int i = 0; i < host->peerCount; i++) {
 					if (&host->peers[i] == event.peer) continue;
@@ -238,7 +272,7 @@ bool network_client_setup(
 		return false;
 	}
 
-	uint8_t loading = 3;
+	uint8_t loading = 7;
 	while (loading) {
 		enet_host_service(*host, &event, 50);
 		if (event.type == ENET_EVENT_TYPE_DISCONNECT) return false;
@@ -254,6 +288,10 @@ bool network_client_setup(
 				loading ^= 2;
 				network_receive_map_data(&event, map);
 				break;
+			case NETWORK_PACKET_TYPE_MONSTER_LIST:
+				if (!(loading & 4)) break;
+				loading ^= 4;
+				network_receive_monsters(&event);
 			default:
 				network_client_receive(&event);
 				break;

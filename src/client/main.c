@@ -14,6 +14,7 @@
 #include "../common/map.h"
 #include "../common/math/mat4.h"
 #include "../common/math/vec3.h"
+#include "../common/monster.h"
 #include "../common/network.h"
 #include "../common/player.h"
 #include "../common/time.h"
@@ -185,17 +186,20 @@ int main(int argc, const char **argv) {
 			wall_draw();
 		}
 
-		Vec3 billboard_pos = { 8, 0, 4.5 };
-		Vec3 to_player = vec3_sub(*pos, billboard_pos);
-		m = mat4_identity();
-		m = mat4_multiply(m, mat4_translate(billboard_pos));
-		m = mat4_multiply(m, mat4_rotate((Vec3){ 0, 1, 0 }, atan2f(to_player.x, to_player.z)));
-		m = mat4_multiply(m, mat4_scale((Vec3){ 0.5, 0.5, 0.5 }));
-		shader_set_mat4(shader, "model", m);
-		shader_set_vec3(shader, "colour", (Vec3){ 1, 0, 0 });
-		shader_set_bool(shader, "fullbright", true);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		quad_draw();
+		for (int i = 0; i < MONSTER_MAX_COUNT; i++) {
+			if (!monster_get_active(i)) continue;
+			Vec3 monster_pos = monster_get_position(i);
+			Vec3 to_player = vec3_sub(*pos, monster_pos);
+			m = mat4_identity();
+			m = mat4_multiply(m, mat4_translate(monster_pos));
+			m = mat4_multiply(m, mat4_rotate((Vec3){ 0, 1, 0 }, atan2f(to_player.x, to_player.z)));
+			m = mat4_multiply(m, mat4_scale((Vec3){ 0.5, 0.5, 0.5 }));
+			shader_set_mat4(shader, "model", m);
+			shader_set_vec3(shader, "colour", (Vec3){ 1, 0, 0 });
+			shader_set_bool(shader, "fullbright", true);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			quad_draw();
+		}
 
 		if (time_next_tick_ns(false) == 0)
 			network_client_service(host, server);
