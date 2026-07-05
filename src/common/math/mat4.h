@@ -1,5 +1,4 @@
-#ifndef COMMON_MATH_MAT4_H
-#define COMMON_MATH_MAT4_H
+#pragma once
 
 #include "vec3.h"
 
@@ -16,5 +15,3 @@ Mat4 mat4_rotate(Vec3 axis, float angle);
 
 Mat4 mat4_look_at(Vec3 eye, Vec3 center, Vec3 up);
 Mat4 mat4_perspective(float fovy, float aspect, float near_z, float far_z);
-
-#endif

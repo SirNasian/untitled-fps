@@ -1,5 +1,4 @@
-#ifndef COMMON_PLAYER_H
-#define COMMON_PLAYER_H
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -23,5 +22,3 @@ Player* player_get_ptr_all();
 Player* player_create(ENetPeer *peer);
 void player_set_active(uint16_t id, bool active);
 void player_set_pose(uint16_t id, const Vec3 *position, const Vec3 *rotation);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef COMMON_NETWORK_H
-#define COMMON_NETWORK_H
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -26,5 +25,3 @@ void network_server_service(ENetHost *host, const uint8_t *map_data);
 
 bool network_client_setup(const char *server_address, int server_port, ENetHost **host, ENetPeer **server, uint8_t *map_data);
 void network_client_service(ENetHost *host, ENetPeer *server);
-
-#endif

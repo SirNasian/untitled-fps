@@ -1,5 +1,4 @@
-#ifndef CLIENT_MESH_H
-#define CLIENT_MESH_H
+#pragma once
 
 #include <stddef.h>
 
@@ -13,5 +12,3 @@ typedef struct {
 
 Mesh mesh_create(GLenum draw_mode, GLfloat *vertices, size_t vertices_size, GLuint *indices, GLsizei indices_count);
 void mesh_draw(Mesh mesh);
-
-#endif

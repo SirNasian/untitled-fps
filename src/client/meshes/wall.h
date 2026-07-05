@@ -1,7 +1,4 @@
-#ifndef CLIENT_WALL_H
-#define CLIENT_WALL_H
+#pragma once
 
 void wall_setup();
 void wall_draw();
-
-#endif

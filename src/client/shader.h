@@ -1,5 +1,4 @@
-#ifndef CLIENT_SHADER_H
-#define CLIENT_SHADER_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -16,5 +15,3 @@ void shader_use(Shader shader);
 void shader_set_bool(Shader shader, const char *uniform, bool value);
 void shader_set_mat4(Shader shader, const char *uniform, Mat4 mat4);
 void shader_set_vec3(Shader shader, const char *uniform, Vec3 vec3);
-
-#endif

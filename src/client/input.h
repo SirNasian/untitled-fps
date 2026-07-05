@@ -1,5 +1,4 @@
-#ifndef CLIENT_INPUT_H
-#define CLIENT_INPUT_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -22,5 +21,3 @@ void input_unset_keybind(int key);
 
 bool input_check_action(InputAction action);
 void input_get_mouse_delta(float *x, float *y);
-
-#endif
