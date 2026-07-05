@@ -97,13 +97,14 @@ void update_view_position(Vec3 *pos, const Vec3 *rot, float delta) {
 	if (!circle_overlaps_wall(new_pos.x, pos->z)) pos->x = new_pos.x;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
 	signal(SIGINT, handle_interrupt);
 
 	ENetHost *host;
 	ENetPeer *server;
-	char *server_address = argc > 1 ? argv[1] : "localhost";
-	if (!network_client_setup(server_address, 42069, &host, &server, map_data))
+	const char *server_address = argc > 1 ? argv[1] : "localhost";
+	int server_port = argc > 2 ? atoi(argv[2]) : 42069;
+	if (!network_client_setup(server_address, server_port, &host, &server, map_data))
 		FAIL("failed to setup network");
 
 	if (glfwInit() == GLFW_FALSE)

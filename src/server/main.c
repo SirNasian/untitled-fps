@@ -1,5 +1,6 @@
 #include <signal.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <time.h>
 
 #include <enet/enet.h>
@@ -35,12 +36,17 @@ void handle_interrupt(int _) {
 	running = false;
 }
 
-int main() {
+int main(int argc, const char **argv) {
 	signal(SIGINT, handle_interrupt);
 
+	const char *listen_address = argc > 1 ? argv[1] : NULL;
+	int listen_port = argc > 2 ? atoi(argv[2]) : 42069;
+
 	ENetHost *host;
-	if (!network_server_setup(NULL, 42069, &host))
+	if (!network_server_setup(listen_address, listen_port, &host))
 		goto terminate;
+
+	printf("listening on %s:%d\n", listen_address ? listen_address : "0.0.0.0", listen_port);
 
 	while (running) {
 		if (time_next_tick_ns(false) == 0)
