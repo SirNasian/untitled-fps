@@ -175,7 +175,7 @@ int main(int argc, const char **argv) {
 			m = mat4_multiply(m, mat4_rotate((Vec3){ 0, 1, 0 }, p->rotation.y));
 			m = mat4_multiply(m, mat4_rotate((Vec3){ 1, 0, 0 }, p->rotation.x));
 			shader_set_mat4(shader, "model", m);
-			shader_set_vec3(shader, "colour", (Vec3){ 1.0, 0.5, 0.2 });
+			shader_set_vec3(shader, "colour", (Vec3){ 0.0, 0.5, 0.8 });
 			shader_set_bool(shader, "fullbright", true);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			player_mesh_draw();
@@ -184,6 +184,7 @@ int main(int argc, const char **argv) {
 			m = mat4_multiply(m, mat4_translate(p->position));
 			m = mat4_multiply(m, mat4_scale((Vec3){ 0.2, 0.2, 0.2 }));
 			shader_set_mat4(shader, "model", m);
+			shader_set_vec3(shader, "colour", (Vec3){ 1.0, 0.5, 0.2 });
 			if (input_check_action(INPUT_WALLHACK)) glDisable(GL_DEPTH_TEST);
 			wall_draw();
 			glEnable(GL_DEPTH_TEST);
