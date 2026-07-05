@@ -1,14 +1,21 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "math/vec3.h"
 
-#define MAP_DATA_WIDTH 16
-#define MAP_DATA_SIZE (MAP_DATA_WIDTH * MAP_DATA_WIDTH)
+typedef struct {
+	uint32_t width;
+	uint32_t height;
+	uint8_t *data;
+} MapData;
 
-Vec3 map_get_player_spawn(const uint8_t *map);
+void map_load_data(const char *path, MapData *map);
+static inline size_t map_get_size(const MapData *map) { return map->width * map->height; }
 
-bool map_test_collide_circle(const uint8_t *map, float cx, float cz, float cr);
-bool map_test_wall(const uint8_t *map, int x, int z);
+Vec3 map_get_player_spawn(const MapData *map);
+
+bool map_test_collide_circle(const MapData *map, float cx, float cz, float cr);
+bool map_test_wall(const MapData *map, int x, int z);

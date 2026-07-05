@@ -3,7 +3,10 @@
 #include <stdio.h>
 #include <time.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+
 #include <enet/enet.h>
+#include <stb_image.h>
 
 #include "../common/map.h"
 #include "../common/network.h"
@@ -12,24 +15,7 @@
 static int exit_code = EXIT_SUCCESS;
 static bool running = true;
 
-static uint8_t map_data[MAP_DATA_SIZE] = {
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-	1,0,1,1,0,0,0,0,0,0,0,0,1,1,0,1,
-	1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,
-	1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,1,
-	1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,
-	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-	1,0,0,0,0,1,2,0,0,0,1,0,0,0,0,1,
-	1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,1,
-	1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,
-	1,0,1,1,0,0,0,0,0,0,0,0,1,1,0,1,
-	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-};
+static MapData map;
 
 void handle_interrupt(int _) {
 	if (!running)
@@ -40,8 +26,11 @@ void handle_interrupt(int _) {
 int main(int argc, const char **argv) {
 	signal(SIGINT, handle_interrupt);
 
-	const char *listen_address = argc > 1 ? argv[1] : NULL;
-	int listen_port = argc > 2 ? atoi(argv[2]) : 42069;
+	map_load_data(argc > 1 ? argv[1] : "map.png", &map);
+	if (!map.data) goto terminate;
+
+	const char *listen_address = argc > 2 ? argv[2] : NULL;
+	int listen_port = argc > 3 ? atoi(argv[3]) : 42069;
 
 	ENetHost *host;
 	if (!network_server_setup(listen_address, listen_port, &host))
@@ -51,7 +40,7 @@ int main(int argc, const char **argv) {
 
 	while (running) {
 		if (time_next_tick_ns(false) == 0)
-			network_server_service(host, map_data);
+			network_server_service(host, &map);
 		nanosleep(&(struct timespec){ 0, time_next_tick_ns(true) }, NULL);
 	}
 

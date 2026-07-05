@@ -4,9 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+
 #include <enet/enet.h>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+#include <stb_image.h>
 
 #include "../common/map.h"
 #include "../common/math/mat4.h"
@@ -31,7 +34,7 @@
 static int exit_code = EXIT_SUCCESS;
 static bool running = true;
 
-static uint8_t map_data[MAP_DATA_SIZE];
+static MapData map;
 
 void handle_interrupt(int _) {
 	if (!running)
@@ -73,8 +76,8 @@ void update_view_angles(float *yaw, float *pitch) {
 
 void update_view_position(Vec3 *pos, const Vec3 *rot, float delta) {
 	Vec3 new_pos = vec3_add(*pos, vec3_mul(get_move_input_direction(rot->y, rot->x), 2.0 * delta));
-	if (!map_test_collide_circle(map_data, pos->x, new_pos.z, PLAYER_RADIUS)) pos->z = new_pos.z;
-	if (!map_test_collide_circle(map_data, new_pos.x, pos->z, PLAYER_RADIUS)) pos->x = new_pos.x;
+	if (!map_test_collide_circle(&map, pos->x, new_pos.z, PLAYER_RADIUS)) pos->z = new_pos.z;
+	if (!map_test_collide_circle(&map, new_pos.x, pos->z, PLAYER_RADIUS)) pos->x = new_pos.x;
 }
 
 int main(int argc, const char **argv) {
@@ -84,7 +87,7 @@ int main(int argc, const char **argv) {
 	ENetPeer *server;
 	const char *server_address = argc > 1 ? argv[1] : "localhost";
 	int server_port = argc > 2 ? atoi(argv[2]) : 42069;
-	if (!network_client_setup(server_address, server_port, &host, &server, map_data))
+	if (!network_client_setup(server_address, server_port, &host, &server, &map))
 		FAIL("failed to setup network");
 
 	if (glfwInit() == GLFW_FALSE)
@@ -150,9 +153,9 @@ int main(int argc, const char **argv) {
 		shader_set_mat4(shader, "view", mat4_look_at(*pos, vec3_add(*pos, get_forward(rot->y, rot->x)), (Vec3){ 0, 1, 0 }));
 		shader_set_vec3(shader, "camera", *pos);
 
-		for (int i = 0; i < MAP_DATA_SIZE; i++) {
-			if (!map_test_wall(map_data, i%MAP_DATA_WIDTH, i/MAP_DATA_WIDTH)) continue;
-			m = mat4_translate((Vec3){ (i % MAP_DATA_WIDTH) + 0.5, 0, (int)(i / MAP_DATA_WIDTH) + 0.5 });
+		for (int i = 0; i < map_get_size(&map); i++) {
+			if (!map_test_wall(&map, i%map.width, i/map.width)) continue;
+			m = mat4_translate((Vec3){ (i % map.width) + 0.5, 0, (int)(i / map.width) + 0.5 });
 			shader_set_mat4(shader, "model", m);
 			shader_set_vec3(shader, "colour", (Vec3){ 0.6, 0.6, 0.6 });
 			shader_set_bool(shader, "fullbright", false);

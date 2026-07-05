@@ -100,17 +100,23 @@ void network_receive_player_pose(const ENetEvent *event) {
 	player_set_pose(player_id, &position, &rotation);
 }
 
-// NOTE: the map is expected to be a 16x16 array
-void network_send_map_data(ENetPeer *peer, const uint8_t *map) {
-	uint8_t data[1+MAP_DATA_SIZE] = { NETWORK_PACKET_TYPE_MAP_DATA };
-	memcpy(data+1, map, MAP_DATA_SIZE);
-	ENetPacket *packet = enet_packet_create(data, 1+MAP_DATA_SIZE, ENET_PACKET_FLAG_RELIABLE);
+void network_send_map_data(ENetPeer *peer, const MapData *map) {
+	size_t data_size = sizeof(uint8_t) + 2*sizeof(uint32_t) + map_get_size(map);
+	uint8_t *data = malloc(data_size);
+	data[0] = NETWORK_PACKET_TYPE_MAP_DATA;
+	memcpy(data+1, &map->width,  sizeof(uint32_t));
+	memcpy(data+5, &map->height, sizeof(uint32_t));
+	memcpy(data+9, map->data,    map_get_size(map));
+	ENetPacket *packet = enet_packet_create(data, data_size, ENET_PACKET_FLAG_RELIABLE);
 	enet_peer_send(peer, NETWORK_CHANNEL_EVENTS, packet);
 }
 
-void network_receive_map_data(ENetEvent *event, uint8_t *map) {
+void network_receive_map_data(ENetEvent *event, MapData *map) {
 	if (event->packet->data[0] != NETWORK_PACKET_TYPE_MAP_DATA) return;
-	memcpy(map, event->packet->data+1, MAP_DATA_SIZE);
+	memcpy(&map->width,  event->packet->data+1,  sizeof(uint32_t));
+	memcpy(&map->height, event->packet->data+5, sizeof(uint32_t));
+	map->data = malloc(map_get_size(map));
+	memcpy(map->data, event->packet->data+9, map_get_size(map));
 }
 
 void network_client_receive(const ENetEvent *event) {
@@ -164,16 +170,16 @@ void network_server_teardown(ENetHost *host) {
 	enet_deinitialize();
 }
 
-void network_server_service(ENetHost *host, const uint8_t *map_data) {
+void network_server_service(ENetHost *host, const MapData *map) {
 	ENetEvent event;
 	while (enet_host_service(host, &event, 0) > 0) {
 		switch (event.type) {
 			case ENET_EVENT_TYPE_CONNECT:
 				event.peer->data = player_create(event.peer);
-				((Player*)event.peer->data)->position = map_get_player_spawn(map_data);
+				((Player*)event.peer->data)->position = map_get_player_spawn(map);
 				network_broadcast_player_pose(host, event.peer->data, NULL);
 				network_send_player_id(event.peer, ((Player*)event.peer->data)->id);
-				network_send_map_data(event.peer, map_data);
+				network_send_map_data(event.peer, map);
 				network_broadcast_player_connect(host, event.peer->data);
 				for (int i = 0; i < host->peerCount; i++) {
 					if (&host->peers[i] == event.peer) continue;
@@ -208,7 +214,7 @@ bool network_client_setup(
 	int server_port,
 	ENetHost **host,
 	ENetPeer **server,
-	uint8_t *map_data
+	MapData *map
 ) {
 	if (enet_initialize() != 0) {
 		fprintf(stderr, "failed to initialise ENET\n");
@@ -246,7 +252,7 @@ bool network_client_setup(
 			case NETWORK_PACKET_TYPE_MAP_DATA:
 				if (!(loading & 2)) break;
 				loading ^= 2;
-				network_receive_map_data(&event, map_data);
+				network_receive_map_data(&event, map);
 				break;
 			default:
 				network_client_receive(&event);

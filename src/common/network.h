@@ -5,6 +5,8 @@
 
 #include <enet/enet.h>
 
+#include "../common/map.h"
+
 typedef enum {
 	NETWORK_PACKET_TYPE_NONE,
 	NETWORK_PACKET_TYPE_PLAYER_CONNECT,
@@ -22,8 +24,8 @@ typedef enum {
 
 bool network_server_setup(const char *listen_address, int listen_port, ENetHost **host);
 void network_server_teardown(ENetHost *host);
-void network_server_service(ENetHost *host, const uint8_t *map_data);
+void network_server_service(ENetHost *host, const MapData *map);
 
-bool network_client_setup(const char *server_address, int server_port, ENetHost **host, ENetPeer **server, uint8_t *map_data);
+bool network_client_setup(const char *server_address, int server_port, ENetHost **host, ENetPeer **server, MapData *map_data);
 void network_client_teardown(ENetHost *host);
 void network_client_service(ENetHost *host, ENetPeer *server);
