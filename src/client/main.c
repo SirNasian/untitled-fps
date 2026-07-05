@@ -8,6 +8,7 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
+#include "../common/map.h"
 #include "../common/math/mat4.h"
 #include "../common/math/vec3.h"
 #include "../common/network.h"
@@ -30,7 +31,7 @@
 static int exit_code = EXIT_SUCCESS;
 static bool running = true;
 
-static uint8_t map_data[256];
+static uint8_t map_data[MAP_DATA_SIZE];
 
 void handle_interrupt(int _) {
 	if (!running)
@@ -70,31 +71,10 @@ void update_view_angles(float *yaw, float *pitch) {
 	*pitch = CLAMP((*pitch) - (y * sensitivity), -1.5, 1.5);
 }
 
-bool circle_overlaps_wall(float cx, float cz) {
-	int tx_min = (int)floorf(cx - PLAYER_RADIUS);
-	int tx_max = (int)floorf(cx + PLAYER_RADIUS);
-	int tz_min = (int)floorf(cz - PLAYER_RADIUS);
-	int tz_max = (int)floorf(cz + PLAYER_RADIUS);
-
-	for (int tz = tz_min; tz <= tz_max; tz++) {
-		for (int tx = tx_min; tx <= tx_max; tx++) {
-			if (tx >= 0 && tx < 16 && tz >= 0 && tz < 16 && map_data[16*tz + tx]) {
-				float nx = fmaxf(tx, fminf(cx, tx + 1.0f));
-				float nz = fmaxf(tz, fminf(cz, tz + 1.0f));
-				float dx = cx - nx;
-				float dz = cz - nz;
-				if (dx*dx + dz*dz < PLAYER_RADIUS*PLAYER_RADIUS)
-					return true;
-			}
-		}
-	}
-	return false;
-}
-
 void update_view_position(Vec3 *pos, const Vec3 *rot, float delta) {
 	Vec3 new_pos = vec3_add(*pos, vec3_mul(get_move_input_direction(rot->y, rot->x), 2.0 * delta));
-	if (!circle_overlaps_wall(pos->x, new_pos.z)) pos->z = new_pos.z;
-	if (!circle_overlaps_wall(new_pos.x, pos->z)) pos->x = new_pos.x;
+	if (!map_test_collide_circle(map_data, pos->x, new_pos.z, PLAYER_RADIUS)) pos->z = new_pos.z;
+	if (!map_test_collide_circle(map_data, new_pos.x, pos->z, PLAYER_RADIUS)) pos->x = new_pos.x;
 }
 
 int main(int argc, const char **argv) {
@@ -170,9 +150,9 @@ int main(int argc, const char **argv) {
 		shader_set_mat4(shader, "view", mat4_look_at(*pos, vec3_add(*pos, get_forward(rot->y, rot->x)), (Vec3){ 0, 1, 0 }));
 		shader_set_vec3(shader, "camera", *pos);
 
-		for (int i = 0; i < 256; i++) {
-			if (!map_data[i]) continue;
-			m = mat4_translate((Vec3){ (i % 16) + 0.5, 0, (int)(i / 16) + 0.5 });
+		for (int i = 0; i < MAP_DATA_SIZE; i++) {
+			if (!map_test_wall(map_data, i%MAP_DATA_WIDTH, i/MAP_DATA_WIDTH)) continue;
+			m = mat4_translate((Vec3){ (i % MAP_DATA_WIDTH) + 0.5, 0, (int)(i / MAP_DATA_WIDTH) + 0.5 });
 			shader_set_mat4(shader, "model", m);
 			shader_set_vec3(shader, "colour", (Vec3){ 0.6, 0.6, 0.6 });
 			shader_set_bool(shader, "fullbright", false);

@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "network.h"
+#include "map.h"
 #include "player.h"
 
 void network_broadcast_player_connect(ENetHost *host, const Player *player) {
@@ -101,15 +102,15 @@ void network_receive_player_pose(const ENetEvent *event) {
 
 // NOTE: the map is expected to be a 16x16 array
 void network_send_map_data(ENetPeer *peer, const uint8_t *map) {
-	uint8_t data[257] = { NETWORK_PACKET_TYPE_MAP_DATA };
-	memcpy(data+1, map, 256);
-	ENetPacket *packet = enet_packet_create(data, 257, ENET_PACKET_FLAG_RELIABLE);
+	uint8_t data[1+MAP_DATA_SIZE] = { NETWORK_PACKET_TYPE_MAP_DATA };
+	memcpy(data+1, map, MAP_DATA_SIZE);
+	ENetPacket *packet = enet_packet_create(data, 1+MAP_DATA_SIZE, ENET_PACKET_FLAG_RELIABLE);
 	enet_peer_send(peer, NETWORK_CHANNEL_EVENTS, packet);
 }
 
 void network_receive_map_data(ENetEvent *event, uint8_t *map) {
 	if (event->packet->data[0] != NETWORK_PACKET_TYPE_MAP_DATA) return;
-	memcpy(map, event->packet->data+1, 256);
+	memcpy(map, event->packet->data+1, MAP_DATA_SIZE);
 }
 
 void network_client_receive(const ENetEvent *event) {
@@ -169,8 +170,7 @@ void network_server_service(ENetHost *host, const uint8_t *map_data) {
 		switch (event.type) {
 			case ENET_EVENT_TYPE_CONNECT:
 				event.peer->data = player_create(event.peer);
-				((Player*)event.peer->data)->position.x =  8;
-				((Player*)event.peer->data)->position.z = 12;
+				((Player*)event.peer->data)->position = map_get_player_spawn(map_data);
 				network_broadcast_player_pose(host, event.peer->data, NULL);
 				network_send_player_id(event.peer, ((Player*)event.peer->data)->id);
 				network_send_map_data(event.peer, map_data);
