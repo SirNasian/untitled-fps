@@ -55,7 +55,6 @@ int main(int argc, const char **argv) {
 	}
 
 terminate:
-	enet_host_destroy(host);
-	enet_deinitialize();
+	network_server_teardown(host);
 	return 0;
 }

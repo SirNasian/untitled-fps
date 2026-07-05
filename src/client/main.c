@@ -218,13 +218,8 @@ int main(int argc, const char **argv) {
 			network_client_service(host, server);
 	}
 
-	ENetEvent event;
-	enet_peer_disconnect(server, 100);
-	enet_host_service(host, &event, 0);
-
 terminate:
-	enet_host_destroy(host);
-	enet_deinitialize();
+	network_client_teardown(host);
 	glfwTerminate();
 	return exit_code;
 }

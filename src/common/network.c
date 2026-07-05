@@ -151,6 +151,18 @@ bool network_server_setup(const char *listen_address, int listen_port, ENetHost 
 	return true;
 }
 
+void network_server_teardown(ENetHost *host) {
+	ENetEvent event;
+
+	for (int i = 0; i < (host ? host->peerCount : 0); i++)
+		enet_peer_disconnect(host->peers+i, 0);
+
+	while (enet_host_service(host, &event, 0) > 0);
+
+	enet_host_destroy(host);
+	enet_deinitialize();
+}
+
 void network_server_service(ENetHost *host, const uint8_t *map_data) {
 	ENetEvent event;
 	while (enet_host_service(host, &event, 0) > 0) {
@@ -246,10 +258,24 @@ bool network_client_setup(
 	return true;
 }
 
+void network_client_teardown(ENetHost *host) {
+	ENetEvent event;
+
+	for (int i = 0; i < (host ? host->peerCount : 0); i++)
+		enet_peer_disconnect(host->peers+i, 0);
+
+	while (enet_host_service(host, &event, 0) > 0);
+
+	enet_host_destroy(host);
+	enet_deinitialize();
+}
+
 void network_client_service(ENetHost *host, ENetPeer *server) {
 	ENetEvent event;
 	while (enet_host_service(host, &event, 0) > 0) {
 		switch (event.type) {
+			case ENET_EVENT_TYPE_DISCONNECT:
+				exit(EXIT_FAILURE);
 			case ENET_EVENT_TYPE_RECEIVE:
 				network_client_receive(&event);
 				enet_packet_destroy(event.packet);
