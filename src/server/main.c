@@ -26,7 +26,7 @@ void handle_interrupt(int _) {
 int main(int argc, const char **argv) {
 	signal(SIGINT, handle_interrupt);
 
-	map_load_data(argc > 1 ? argv[1] : "map.png", &map);
+	map_load_data(argc > 1 ? argv[1] : "assets/map.png", &map);
 	if (!map.data) goto terminate;
 
 	const char *listen_address = argc > 2 ? argv[2] : NULL;
