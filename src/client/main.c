@@ -25,7 +25,7 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define CLAMP(value, min, max) (MAX((min), MIN((max), (value))))
-#define PLAYER_RADIUS 0.2
+#define PLAYER_RADIUS 0.1
 
 static int exit_code = EXIT_SUCCESS;
 static bool running = true;
@@ -70,18 +70,31 @@ void update_view_angles(float *yaw, float *pitch) {
 	*pitch = CLAMP((*pitch) - (y * sensitivity), -1.5, 1.5);
 }
 
+bool circle_overlaps_wall(float cx, float cz) {
+	int tx_min = (int)floorf(cx - PLAYER_RADIUS);
+	int tx_max = (int)floorf(cx + PLAYER_RADIUS);
+	int tz_min = (int)floorf(cz - PLAYER_RADIUS);
+	int tz_max = (int)floorf(cz + PLAYER_RADIUS);
+
+	for (int tz = tz_min; tz <= tz_max; tz++) {
+		for (int tx = tx_min; tx <= tx_max; tx++) {
+			if (tx >= 0 && tx < 16 && tz >= 0 && tz < 16 && map_data[16*tz + tx]) {
+				float nx = fmaxf(tx, fminf(cx, tx + 1.0f));
+				float nz = fmaxf(tz, fminf(cz, tz + 1.0f));
+				float dx = cx - nx;
+				float dz = cz - nz;
+				if (dx*dx + dz*dz < PLAYER_RADIUS*PLAYER_RADIUS)
+					return true;
+			}
+		}
+	}
+	return false;
+}
+
 void update_view_position(Vec3 *pos, const Vec3 *rot, float delta) {
-	*pos = vec3_add(*pos, vec3_mul(get_move_input_direction(rot->y, rot->x), 2.0 * delta));
-
-	if (map_data[16*(int)(pos->z + PLAYER_RADIUS) + (int)pos->x])
-		pos->z = (float)(int)(pos->z + PLAYER_RADIUS) - PLAYER_RADIUS;
-	if (map_data[16*(int)(pos->z - PLAYER_RADIUS) + (int)pos->x])
-		pos->z = (float)((int)(pos->z - PLAYER_RADIUS) + 1) + PLAYER_RADIUS;
-
-	if (map_data[16*(int)pos->z + (int)(pos->x + PLAYER_RADIUS)])
-		pos->x = (float)(int)(pos->x + PLAYER_RADIUS) - PLAYER_RADIUS;
-	if (map_data[16*(int)pos->z + (int)(pos->x - PLAYER_RADIUS)])
-		pos->x = (float)((int)(pos->x - PLAYER_RADIUS) + 1) + PLAYER_RADIUS;
+	Vec3 new_pos = vec3_add(*pos, vec3_mul(get_move_input_direction(rot->y, rot->x), 2.0 * delta));
+	if (!circle_overlaps_wall(pos->x, new_pos.z)) pos->z = new_pos.z;
+	if (!circle_overlaps_wall(new_pos.x, pos->z)) pos->x = new_pos.x;
 }
 
 int main(int argc, char **argv) {
