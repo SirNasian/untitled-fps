@@ -185,16 +185,14 @@ int main(int argc, const char **argv) {
 			if (!p->active || p == player_get_ptr())
 				continue;
 
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			shader_set_mat4(shader, "model", m);
-			shader_set_vec3(shader, "colour", (Vec3){ 1.0, 0.5, 0.2 });
-			shader_set_bool(shader, "fullbright", true);
-
 			m = mat4_identity();
 			m = mat4_multiply(m, mat4_translate(p->position));
 			m = mat4_multiply(m, mat4_rotate((Vec3){ 0, 1, 0 }, p->rotation.y));
 			m = mat4_multiply(m, mat4_rotate((Vec3){ 1, 0, 0 }, p->rotation.x));
 			shader_set_mat4(shader, "model", m);
+			shader_set_vec3(shader, "colour", (Vec3){ 1.0, 0.5, 0.2 });
+			shader_set_bool(shader, "fullbright", true);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			player_mesh_draw();
 
 			m = mat4_identity();
@@ -203,6 +201,18 @@ int main(int argc, const char **argv) {
 			shader_set_mat4(shader, "model", m);
 			wall_draw();
 		}
+
+		Vec3 billboard_pos = { 8, 0, 4.5 };
+		Vec3 to_player = vec3_sub(*pos, billboard_pos);
+		m = mat4_identity();
+		m = mat4_multiply(m, mat4_translate(billboard_pos));
+		m = mat4_multiply(m, mat4_rotate((Vec3){ 0, 1, 0 }, atan2f(to_player.x, to_player.z)));
+		m = mat4_multiply(m, mat4_scale((Vec3){ 0.5, 0.5, 0.5 }));
+		shader_set_mat4(shader, "model", m);
+		shader_set_vec3(shader, "colour", (Vec3){ 1, 0, 0 });
+		shader_set_bool(shader, "fullbright", true);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		quad_draw();
 
 		if (time_next_tick_ns(false) == 0)
 			network_client_service(host, server);
