@@ -7,6 +7,10 @@
 
 #include "math/vec3.h"
 
+// NOTE: 65536 is the maximum number of values represented
+//       by a two bit unsigned integer (uint16_t)
+#define PLAYER_MAX_COUNT 65536
+
 typedef struct {
 	uint16_t id;
 	bool active;

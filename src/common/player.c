@@ -1,8 +1,6 @@
 #include "player.h"
 
-// NOTE: 65536 is the maximum number of values represented
-//       by a two bit unsigned integer (uint16_t)
-Player _players[65536];
+Player _players[PLAYER_MAX_COUNT];
 uint16_t _player_id = 0;
 
 void player_set_id(uint16_t id) { _player_id = id; }

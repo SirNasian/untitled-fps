@@ -164,7 +164,7 @@ int main(int argc, const char **argv) {
 			wall_draw();
 		}
 
-		for (uint32_t i = 0; i < 65536; i++) {
+		for (uint32_t i = 0; i < PLAYER_MAX_COUNT; i++) {
 			Player *p = player_get_ptr_all()+i;
 			if (!p->active || p == player_get_ptr())
 				continue;

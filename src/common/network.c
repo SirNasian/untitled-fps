@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "network.h"
+#include "enet/enet.h"
 #include "map.h"
 #include "monster.h"
 #include "player.h"
@@ -152,12 +153,46 @@ void network_receive_monsters(const ENetEvent *event) {
 	}
 }
 
+void network_broadcast_monster_active(ENetHost *host, uint16_t id) {
+	size_t data_size = sizeof(uint8_t) + sizeof(uint16_t) + sizeof(uint8_t);
+	uint8_t data[data_size];
+	*(uint16_t*)(data+0) = NETWORK_PACKET_TYPE_MONSTER_ACTIVE;
+	*(uint16_t*)(data+1) = id;
+	*(uint8_t*) (data+3) = monster_get_active(id);
+	ENetPacket *packet = enet_packet_create(data, data_size, ENET_PACKET_FLAG_RELIABLE);
+	enet_host_broadcast(host, NETWORK_CHANNEL_EVENTS, packet);
+}
+
+void network_receive_monster_active(const ENetEvent *event) {
+	if (event->packet->data[0] != NETWORK_PACKET_TYPE_MONSTER_ACTIVE) return;
+	uint16_t id = *(uint16_t*)(event->packet->data+1);
+	monster_set_active(id, *(uint8_t*)(event->packet->data+3));
+}
+
+void network_broadcast_monster_pose(ENetHost *host, uint16_t id) {
+	size_t data_size = sizeof(uint8_t) + sizeof(uint16_t) + sizeof(Vec3);
+	uint8_t data[data_size];
+	*(uint16_t*)(data+0) = NETWORK_PACKET_TYPE_MONSTER_POSE;
+	*(uint16_t*)(data+1) = id;
+	*(Vec3*)    (data+3) = monster_get_position(id);
+	ENetPacket *packet = enet_packet_create(data, data_size, 0);
+	enet_host_broadcast(host, NETWORK_CHANNEL_UPDATES, packet);
+}
+
+void network_receive_monster_pose(const ENetEvent *event) {
+	if (event->packet->data[0] != NETWORK_PACKET_TYPE_MONSTER_POSE) return;
+	uint16_t id = *(uint16_t*)(event->packet->data+1);
+	monster_set_position(id, *(Vec3*)(event->packet->data+3));
+}
+
 void network_client_receive(const ENetEvent *event) {
 	if (event->type != ENET_EVENT_TYPE_RECEIVE) return;
 	switch ((NetworkPacketType)event->packet->data[0]) {
 		case NETWORK_PACKET_TYPE_PLAYER_CONNECT:    network_receive_player_connect(event);    break;
 		case NETWORK_PACKET_TYPE_PLAYER_DISCONNECT: network_receive_player_disconnect(event); break;
 		case NETWORK_PACKET_TYPE_PLAYER_POSE:       network_receive_player_pose(event);       break;
+		case NETWORK_PACKET_TYPE_MONSTER_POSE:      network_receive_monster_pose(event);      break;
+		case NETWORK_PACKET_TYPE_MONSTER_ACTIVE:    network_receive_monster_active(event);    break;
 		default: break;
 	}
 }
@@ -241,6 +276,10 @@ void network_server_service(ENetHost *host, const MapData *map) {
 	for (int i = 0; i < host->peerCount; i++)
 		if (host->peers[i].state == ENET_PEER_STATE_CONNECTED)
 			network_broadcast_player_pose(host, host->peers[i].data, &host->peers[i]);
+
+	for (int i = 0; i < MONSTER_MAX_COUNT; i++)
+		if (monster_get_active(i))
+			network_broadcast_monster_pose(host, i);
 }
 
 bool network_client_setup(
