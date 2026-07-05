@@ -112,10 +112,11 @@ int main(int argc, const char **argv) {
 	glfwSetCursorPosCallback(window, glfw_cursor_pos_callback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	input_set_keybind(GLFW_KEY_W, INPUT_MOVE_FORWARD);
-	input_set_keybind(GLFW_KEY_A, INPUT_MOVE_LEFT);
-	input_set_keybind(GLFW_KEY_S, INPUT_MOVE_BACKWARD);
-	input_set_keybind(GLFW_KEY_D, INPUT_MOVE_RIGHT);
+	input_set_keybind(GLFW_KEY_W,     INPUT_MOVE_FORWARD);
+	input_set_keybind(GLFW_KEY_A,     INPUT_MOVE_LEFT);
+	input_set_keybind(GLFW_KEY_S,     INPUT_MOVE_BACKWARD);
+	input_set_keybind(GLFW_KEY_D,     INPUT_MOVE_RIGHT);
+	input_set_keybind(GLFW_KEY_SPACE, INPUT_WALLHACK);
 
 	glViewport(0, 0, 800, 600);
 	glClearColor(0.2, 0.3, 0.3, 1.0);
@@ -183,7 +184,9 @@ int main(int argc, const char **argv) {
 			m = mat4_multiply(m, mat4_translate(p->position));
 			m = mat4_multiply(m, mat4_scale((Vec3){ 0.2, 0.2, 0.2 }));
 			shader_set_mat4(shader, "model", m);
+			if (input_check_action(INPUT_WALLHACK)) glDisable(GL_DEPTH_TEST);
 			wall_draw();
+			glEnable(GL_DEPTH_TEST);
 		}
 
 		for (int i = 0; i < MONSTER_MAX_COUNT; i++) {
@@ -198,7 +201,9 @@ int main(int argc, const char **argv) {
 			shader_set_vec3(shader, "colour", (Vec3){ 1, 0, 0 });
 			shader_set_bool(shader, "fullbright", true);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			if (input_check_action(INPUT_WALLHACK)) glDisable(GL_DEPTH_TEST);
 			quad_draw();
+			glEnable(GL_DEPTH_TEST);
 		}
 
 		if (time_next_tick_ns(false) == 0)
